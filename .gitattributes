@@ -1,0 +1,8 @@
+# Preserve the authoritative offline application's exact bytes on every OS.
+index.html -text
+*.png binary
+*.md text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+
