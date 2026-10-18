@@ -32,13 +32,38 @@ Open <http://localhost:8000/>. Stop the server with Ctrl+C.
 
 Shortcuts do not intercept typing in search, the question, or card selectors. The sidebar legend remains visible at desktop widths.
 
+## Validation
+
+Node.js 20 or later is required only for development checks. The application itself still needs no installation.
+
+```sh
+npm test
+npm ci --ignore-scripts
+npx playwright install chromium
+npm run test:browser
+```
+
+`npm test` uses only Node's built-in modules to verify the exact imported HTML hash, JavaScript syntax, all card fields, search, duplicate-card swaps, random draws, saved-state compatibility, clearing, and text escaping. The browser suite uses Playwright as a **development-only** dependency. On Linux CI, install browser system dependencies with `npx playwright install --with-deps chromium`.
+
+Browser checks run against both the direct offline file and a temporary localhost server under `/ashen-veil-tarocchi/`, at 1440, 938, and 680 px. They check reference and reading content, orientations, layouts, question expansion, navigation back from full-card details, real keyboard events, duplicate assignments, persistence, console errors, and unexpected network requests. Screenshots are written to ignored `test-results/` for comparison with the supplied references. System fonts can render differently across browsers and operating systems; these are layout guides, not pixel-exact snapshot assertions.
+
+To verify a deployed site, set `BASE_URL` before running the same suite. It also checks that hosted HTML matches the local authoritative source. For example, in PowerShell:
+
+```powershell
+$env:BASE_URL = 'https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/'
+npm run test:browser
+Remove-Item Env:BASE_URL
+```
+
+Optionally set `BROWSER_CHANNEL=chrome` to check an installed Chrome browser instead of Playwright's bundled Chromium.
+
 ## Repository and publication
 
 Approved target: `iskandarzulkarnaien/ashen-veil-tarocchi`, public repository.
 
 **Publication status: pending.** No remote repository or deployed URL has been verified yet. The expected project path is `https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/`; this is an intended address, not a claim of deployment. Replace this status with the actual verified URL after publishing.
 
-The deployment will use GitHub Actions on pushes to `main` and manual workflow runs. Only `index.html` will be staged in `_site/` and uploaded; instructions, tests, screenshots, and Git metadata will remain outside the site artifact. Enable **Settings → Pages → Source: GitHub Actions** once the remote exists.
+The deployment uses `.github/workflows/pages.yml` on pushes to `main` and manual workflow runs. Validation must pass before deployment. Only `index.html` is staged in `_site/` and uploaded; instructions, tests, screenshots, and Git metadata remain outside the site artifact. Enable **Settings → Pages → Source: GitHub Actions** once the remote exists. Deployments are restricted to `main`; choose that branch for manual runs. A failed validation leaves the previous successful site in place. To restore an older version, revert the relevant source commit on `main`, run the checks, and push.
 
 ## Structure and maintenance
 
@@ -47,6 +72,9 @@ index.html                Authoritative offline application, styling, and data
 AGENTS.md                 Standing project instructions
 CODEX_HANDOFF.md          Project brief and acceptance checklist
 docs/visual-baselines/    Four supplied visual references at about 938 px
+tests/                    Data/state validation and browser regression checks
+package.json              Development commands and test-only dependency
+.github/workflows/        Validate and publish only the static entry point
 ```
 
 Read `AGENTS.md` and `CODEX_HANDOFF.md` before changing the application. Preserve the original UI, tarot copy, all 22 records and six interpretations per card, and saved-state schema. Check reference and reading layouts at 1440, 938, and 680 px, particularly both half-window 2 × 2 grids. Test both a direct file and an HTTP preview; hosting must also work under a repository subpath.

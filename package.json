@@ -1,0 +1,12 @@
+{
+  "name": "ashen-veil-tarocchi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Validation tools for the standalone Vesper's Tarocchi application",
+  "scripts": {
+    "test": "node tests/validate.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "devDependencies": { "playwright": "1.56.1" }
+}
