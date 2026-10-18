@@ -59,11 +59,13 @@ Optionally set `BROWSER_CHANNEL=chrome` to check an installed Chrome browser ins
 
 ## Repository and publication
 
-Approved target: `iskandarzulkarnaien/ashen-veil-tarocchi`, public repository.
+Public repository: [iskandarzulkarnaien/ashen-veil-tarocchi](https://github.com/iskandarzulkarnaien/ashen-veil-tarocchi).
 
-**Publication status: pending.** No remote repository or deployed URL has been verified yet. The expected project path is `https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/`; this is an intended address, not a claim of deployment. Replace this status with the actual verified URL after publishing.
+**Live application:** [Vesper's Tarocchi](https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/).
 
-The deployment uses `.github/workflows/pages.yml` on pushes to `main` and manual workflow runs. Validation must pass before deployment. Only `index.html` is staged in `_site/` and uploaded; instructions, tests, screenshots, and Git metadata remain outside the site artifact. Enable **Settings → Pages → Source: GitHub Actions** once the remote exists. Deployments are restricted to `main`; choose that branch for manual runs. A failed validation leaves the previous successful site in place. To restore an older version, revert the relevant source commit on `main`, run the checks, and push.
+Published and verified on 2026-10-18: the Actions deployment succeeded, all three live browser scenarios passed, and the hosted HTML matches the authoritative offline file. Twelve live screenshots are pixel-identical to the offline app in the same Chrome environment. See [the verification report](docs/VERIFICATION.md) for checks, source hash, workflow evidence, and the supplied-baseline font-rendering caveat.
+
+The deployment uses `.github/workflows/pages.yml` on pushes to `main` and manual workflow runs. Validation must pass before deployment. Only `index.html` is staged in `_site/` and uploaded; instructions, tests, screenshots, and Git metadata remain outside the site artifact. **Settings → Pages → Source: GitHub Actions** is configured. The `github-pages` environment permits deployments only from `main`; choose that branch for manual runs. A failed validation leaves the previous successful site in place. To restore an older version, revert the relevant source commit on `main`, run the checks, and push.
 
 ## Structure and maintenance
 
