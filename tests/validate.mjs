@@ -45,9 +45,11 @@ function app(saved = null) {
 let passed = 0;
 function check(name, fn) { fn(); passed++; console.log(`PASS ${name}`); }
 
-check('authoritative HTML is byte-for-byte unchanged and valid JavaScript', () => {
-  assert.equal(createHash('sha256').update(bytes).digest('hex'),
-    'e6b15af9c0cd983a2da9bf3dcbbfb415bac2b8d36eb2bdb7f6ae6f7b03caf3a6');
+check('authoritative card data is byte-for-byte unchanged and scripts parse', () => {
+  const originalData = script.match(/const CARDS=(\[[\s\S]*?\]);\s*const POSITIONS/)[1];
+  assert.equal(createHash('sha256').update(originalData).digest('hex'),
+    '20e542aec45e3d66a6df8850eecce94370586284fe969c8a710c80c658e3a851');
+  for (const match of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
 });
 
 check('22 ordered, unique Arcana with every required meaning and question', () => {

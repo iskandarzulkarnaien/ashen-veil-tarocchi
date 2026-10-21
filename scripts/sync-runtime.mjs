@@ -1,0 +1,13 @@
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+const htmlURL = new URL('../index.html', import.meta.url);
+let html = readFileSync(htmlURL, 'utf8');
+const core = readFileSync(new URL('../src/preparation-core.js', import.meta.url), 'utf8').trim();
+const ui = readFileSync(new URL('../src/preparation-ui.js', import.meta.url), 'utf8').trim();
+const runtime = `<script id="preparationRuntime">\n${core}\n${ui}\n</script>`;
+if (html.includes('<script id="preparationRuntime">')) html = html.replace(/<script id="preparationRuntime">[\s\S]*?<\/script>/, () => runtime);
+else html = html.replace('</body>', () => `${runtime}\n</body>`);
+writeFileSync(htmlURL, html);
+const cards = html.match(/const CARDS=(\[[\s\S]*?\]);\s*const POSITIONS/)[1];
+mkdirSync(new URL('../worker/', import.meta.url), { recursive: true });
+writeFileSync(new URL('../worker/cards.json', import.meta.url), cards + '\n');
+console.log('Embedded preparation runtime and synchronized unchanged card data for the Worker.');

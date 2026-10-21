@@ -4,9 +4,18 @@
   "private": true,
   "description": "Validation tools for the standalone Vesper's Tarocchi application",
   "scripts": {
-    "test": "node tests/validate.mjs",
-    "test:browser": "node tests/browser.mjs"
+    "test": "node tests/validate.mjs && node --test tests/*.test.mjs",
+    "test:browser": "node tests/browser.mjs && node tests/preparation-browser.mjs",
+    "sync": "node scripts/sync-runtime.mjs",
+    "worker:check": "wrangler deploy --dry-run --config worker/wrangler.jsonc",
+    "worker:login": "wrangler login",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc"
   },
-  "engines": { "node": ">=20" },
-  "devDependencies": { "playwright": "1.56.1" }
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "wrangler": "4.151.3"
+  }
 }

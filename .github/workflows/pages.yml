@@ -30,6 +30,10 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Check offline and repository-subpath browser behavior
         run: npm run test:browser
+      - name: Validate Worker bundle without deployment or secrets
+        run: npm run worker:check
+        env:
+          WRANGLER_SEND_METRICS: 'false'
       - name: Stage only public application files
         run: |
           mkdir _site

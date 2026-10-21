@@ -7,3 +7,4 @@
 5. Preserve the `vesperTarocchi_v1` localStorage state schema; do not claim that file-origin state migrates automatically to a hosted site.
 6. No accounts, analytics, remote APIs, or third-party assets without explicit user approval. Do not automatically assign a software/content license.
 7. Keep git commits focused and report precisely what was tested and deployed. Confirm public GitHub publishing details; never claim success without verifying it.
+8. For the approved DM Preparation feature, also read `docs/DM_PREPARATION_REQUIREMENTS.md` and `docs/DM_PREPARATION_SETUP.md`. That feature extends the original first-milestone non-goals with explicitly authorized OpenAI/Cloudflare integration; preserve the original tarot data and existing offline functionality.

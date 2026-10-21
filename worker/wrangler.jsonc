@@ -1,0 +1,23 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "ashen-veil-tarocchi-api",
+  "main": "index.mjs",
+  "compatibility_date": "2026-10-21",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://iskandarzulkarnaien.github.io",
+    "PREPARATION_MODEL": "gpt-6.1-sol",
+    "FAST_MODEL": "gpt-6.1-sol",
+    "PREPARATION_EFFORT": "medium",
+    "FAST_EFFORT": "medium",
+    "PREPARATION_TIER": "default",
+    "FAST_TIER": "fast"
+  },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "ashen-veil-tarocchi-usage",
+    "database_id": "REPLACE_WITH_OWNER_DATABASE_ID",
+    "migrations_dir": "migrations"
+  }]
+}
