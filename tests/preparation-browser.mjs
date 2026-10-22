@@ -31,12 +31,26 @@ try {
       await context.addInitScript(({ key, legacy }) => { if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(legacy)); }, { key, legacy });
       const page = await context.newPage(); page.setDefaultTimeout(10000);
       const errors = [], calls = [];
+      let pending;
+      const hold = (path, fail = false) => {
+        let release;
+        const wait = new Promise(resolve => { release = resolve; });
+        pending = { path, wait, fail };
+        return release;
+      };
       page.on('pageerror', error => errors.push(error.message));
       await page.route(`${api}/**`, async route => {
         const path = new URL(route.request().url()).pathname;
         const body = route.request().postDataJSON(); calls.push({ path, body });
         const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
-        if (path === '/auth') return route.fulfill({ headers, json: { token: 'test-session', expires: Date.now() + 600000 } });
+        if (path === pending?.path) {
+          const held = pending; pending = null;
+          await held.wait;
+          if (held.fail) return route.fulfill({ headers, status: 503, json: { error: 'Test service unavailable. No automatic retry was made.' } });
+        }
+        if (path === '/auth') return body.code === 'wrong-code'
+          ? route.fulfill({ headers, status: 401, json: { error: 'Incorrect access code.' } })
+          : route.fulfill({ headers, json: { token: 'test-session', expires: Date.now() + 600000 } });
         if (path === '/usage') return route.fulfill({ headers, json: { month: '2026-10', estimatedUSD: 0.02, requests: 2, unpriced: 0 } });
         if (path === '/explain') return route.fulfill({ headers, json: { explanation: { conveyed: '<img src=x onerror=alert(1)> betrayal', omissions: 'Identity', misleading: '', metaphor: '' }, warning: '' } });
         if (path === '/generate') {
@@ -74,6 +88,24 @@ try {
         assert.deepEqual(await saved(), afterSave); assert.equal(await page.locator('#sharedReading').isVisible(), false);
         await page.goto(url);
         await page.locator('#dmTab').click();
+        assert.equal(await page.locator('#dmWorkspace').isVisible(), false);
+        assert.equal(await page.locator('#dmSave').isVisible(), false);
+        assert.equal(await page.locator('#dmQuestion').isVisible(), false);
+        assert.equal(await page.locator('#dmResults').textContent(), '');
+        assert.equal(calls.length, 0);
+        await page.screenshot({ path: fileURLToPath(new URL(`dm-locked-${kind}-${width}.png`, output)), fullPage: true });
+        if (kind === 'http') {
+          await page.locator('#dmCode').fill('wrong-code'); await page.locator('#dmUnlock').click();
+          await page.waitForFunction(() => document.getElementById('dmMessage').textContent.includes('Incorrect'));
+          assert.equal(await page.locator('#dmWorkspace').isVisible(), false);
+          await page.locator('#dmCode').fill('test-private-code'); await page.locator('#dmUnlock').click();
+          await page.waitForFunction(() => !document.getElementById('dmWorkspace').hidden);
+        } else {
+          // Simulate remembered authorization for offline file editing only.
+          await page.evaluate(() => localStorage.setItem('vesperTarocchi_access_v1', JSON.stringify({ token: 'offline-test-session', expires: Date.now() + 600000 })));
+          await page.reload(); await page.locator('#dmTab').click();
+        }
+        assert.equal(await page.locator('label').filter({ has: page.locator('#dmQuestion') }).textContent(), 'Vesper’s question to His Eminence');
         await importFile(fixture); await page.waitForFunction(() => document.getElementById('dmQuestion').value.includes('Whom'));
         assert.equal(await page.locator('#dmAnswer').inputValue(), answer);
         assert.equal(await page.locator('.dm-rank').count(), 1);
@@ -98,27 +130,73 @@ try {
         await page.locator('#dmQuestion').fill(question);
         assert.deepEqual((await saved()).slots, spread);
         if (kind === 'http') {
-          await page.locator('#dmCode').fill('test-private-code'); await page.locator('#dmUnlock').click();
-          await page.waitForFunction(() => !document.getElementById('dmLock').hidden);
+          await page.clock.install();
+          const releaseGeneration = hold('/generate');
           await page.locator('#dmGenerate').click();
-          await page.waitForFunction(() => document.getElementById('dmMessage').textContent.startsWith('Spread ready'));
+          assert.equal(await page.locator('#dmGenerate').getAttribute('aria-busy'), 'true');
+          assert.equal(await page.locator('#dmGenerate').isDisabled(), true);
+          assert.ok((await page.locator('#dmGenerateStatus').textContent()).includes('Selecting your spread'));
+          await page.clock.fastForward(11000);
+          assert.ok((await page.locator('#dmGenerateStatus').textContent()).includes('Still waiting'));
+          await page.screenshot({ path: fileURLToPath(new URL(`dm-generating-${width}.png`, output)), fullPage: true });
+          releaseGeneration();
+          await page.waitForFunction(() => document.getElementById('dmGenerateStatus').textContent.startsWith('Spread ready'));
+          await page.waitForFunction(() => !document.getElementById('dmGenerate').disabled);
+          assert.equal(await page.locator('#dmGenerate').getAttribute('aria-busy'), 'false');
           assert.equal(await page.locator('.dm-rank').count(), 1); assert.equal(await page.locator('.dm-explanation').count(), 0);
           assert.equal(calls.filter(c => c.path === '/generate').length, 1); assert.equal(calls.filter(c => c.path === '/explain').length, 0);
           await page.locator('[data-edit-o="0"]').selectOption('r');
           const exact = (await draft()).candidates[0].slots;
-          await page.locator('#dmExplain').click(); await page.waitForFunction(() => document.querySelector('.dm-explanation'));
+          const releaseExplanation = hold('/explain');
+          await page.locator('#dmExplain').click();
+          assert.equal(await page.locator('#dmExplain').getAttribute('aria-busy'), 'true');
+          assert.equal(await page.locator('#dmExplain').isDisabled(), true);
+          assert.ok((await page.locator('#dmExplainStatus').textContent()).includes('Preparing the explanation'));
+          await page.clock.fastForward(11000);
+          assert.ok((await page.locator('#dmExplainStatus').textContent()).includes('Still waiting'));
+          const statusBox = await page.locator('#dmExplainStatus').boundingBox();
+          assert.ok(statusBox.y >= 0 && statusBox.y + statusBox.height <= 1060, 'explanation feedback stays beside the clicked button in view');
+          await page.screenshot({ path: fileURLToPath(new URL(`dm-explaining-${width}.png`, output)), fullPage: true });
+          releaseExplanation();
+          await page.waitForFunction(() => document.querySelector('.dm-explanation'));
+          assert.equal(await page.locator('#dmExplainStatus').textContent(), 'Explanation ready.');
+          assert.equal(await page.locator('#dmExplain').getAttribute('aria-busy'), 'false');
           assert.deepEqual(calls.find(c => c.path === '/explain').body.slots, exact);
           assert.equal(await page.locator('#dmResults img').count(), 0);
           assert.ok((await page.locator('.dm-explanation').textContent()).includes('<img'));
+          const releaseFailure = hold('/explain', true);
+          await page.locator('#dmExplain').click(); releaseFailure();
+          await page.waitForFunction(() => document.getElementById('dmExplainStatus').textContent.startsWith('Failed:'));
+          assert.equal(await page.locator('#dmExplain').isEnabled(), true);
+          assert.deepEqual((await draft()).candidates[0].slots, exact);
+          assert.equal(calls.filter(c => c.path === '/explain').length, 2);
           await page.locator('#dmMode').selectOption('preparation'); await page.locator('#dmGenerate').click();
           await page.waitForFunction(() => document.querySelectorAll('.dm-rank').length === 3);
           assert.equal(await page.locator('.dm-explanation').count(), 1);
           await page.locator('[data-candidate="2"]').click(); assert.equal((await draft()).selected, 2);
+          const beforeFailure = await draft(), releaseGenerationFailure = hold('/generate', true);
+          await page.locator('#dmGenerate').click(); releaseGenerationFailure();
+          await page.waitForFunction(() => document.getElementById('dmGenerateStatus').textContent.startsWith('Failed:'));
+          assert.equal(await page.locator('#dmGenerate').isEnabled(), true);
+          assert.deepEqual(await draft(), beforeFailure);
+          assert.equal(calls.filter(c => c.path === '/generate').length, 3);
+          await page.screenshot({ path: fileURLToPath(new URL(`dm-ready-${width}.png`, output)), fullPage: true });
           await page.reload(); await page.locator('#dmTab').click();
           assert.equal(await page.locator('#dmUnlockForm').isVisible(), false);
-          await page.locator('#dmLock').click();
+          await page.clock.fastForward(600000);
+          await page.waitForFunction(() => document.getElementById('dmWorkspace').hidden);
           assert.equal(await page.evaluate(() => localStorage.getItem('vesperTarocchi_access_v1')), null);
-        } else assert.equal(await page.locator('#dmGenerate').isDisabled(), true);
+          assert.equal(await page.locator('#dmUsage').isVisible(), false);
+          assert.deepEqual(await draft(), beforeFailure);
+          assert.equal(await page.locator('#dmWorkspace').isVisible(), false);
+          assert.equal(await page.locator('#dmResults').textContent(), '');
+          await page.reload(); await page.locator('#dmTab').click();
+          assert.equal(await page.locator('#dmWorkspace').isVisible(), false);
+        } else {
+          assert.equal(calls.length, 0);
+          await page.locator('#dmLock').click();
+          assert.equal(await page.locator('#dmWorkspace').isVisible(), false);
+        }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         assert.deepEqual(errors, []);
         await page.screenshot({ path: fileURLToPath(new URL(`dm-${kind}-${width}.png`, output)), fullPage: true });

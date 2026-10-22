@@ -215,6 +215,12 @@ setMode(state.mode);
   const style = document.createElement('style');
   style.textContent = `
     .tabs{flex-wrap:wrap}.btn:disabled{opacity:.45;cursor:default}
+    #dmView [hidden]{display:none!important}
+    .dm-feedback{margin:10px 0 0;min-height:1.5em;line-height:1.6;overflow-wrap:anywhere}
+    #dmView .btn[aria-busy=true]{opacity:1}
+    #dmView .btn[aria-busy=true]::before{content:'';display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;animation:dm-spin 1s linear infinite}
+    @keyframes dm-spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){#dmView .btn[aria-busy=true]::before{animation:none}}
     .dm-panel,.shared-banner{border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:18px;margin:16px 0}
     .shared-banner{border-color:var(--gold2)}.shared-banner[hidden]{display:none}
     .dm-panel h3{font:22px Georgia,serif;margin:0 0 14px}.dm-panel p{overflow-wrap:anywhere}
@@ -241,47 +247,67 @@ setMode(state.mode);
   const section = document.createElement('section');
   section.id = 'dmView'; section.className = 'view'; section.role = 'tabpanel'; section.setAttribute('aria-labelledby', 'dmTab');
   section.innerHTML = `
-    <div class="read-head"><h2>DM Preparation</h2><div class="toolbar"><button class="btn" id="dmSave">Save preparation</button><button class="btn" id="dmLoad">Load preparation</button><input type="file" id="dmFile" accept=".json,application/json" hidden></div></div>
-    <p class="dm-note">Private preparation for the DM. Only the question and selected spread are included in Vesper’s reading link.</p>
+    <div class="read-head"><h2>DM Preparation</h2></div>
     <div class="dm-panel" id="dmAccess"><h3>DM access</h3>
       <p class="dm-note" id="dmSetup"></p>
       <form id="dmUnlockForm"><label class="dm-field"><span>Private access code</span><input type="password" id="dmCode" autocomplete="current-password" maxlength="256" required></label>
-        <label class="dm-check"><input type="checkbox" id="dmRemember" checked> Remember access on this device</label><button class="btn gold" id="dmUnlock" type="submit">Unlock generation</button></form>
+        <label class="dm-check"><input type="checkbox" id="dmRemember" checked> Remember access on this device</label><button class="btn gold" id="dmUnlock" type="submit">Unlock preparation</button></form>
       <div class="toolbar"><button class="btn" id="dmLock" hidden>Lock</button><button class="btn" id="dmRefreshUsage" hidden>Refresh usage</button><span class="dm-note" id="dmUsage"></span></div>
     </div>
-    <div class="dm-panel"><label class="dm-field"><span>Vesper’s question to her god</span><textarea id="dmQuestion" maxlength="2000"></textarea></label>
+    <p id="dmMessage" role="status" aria-live="polite"></p>
+    <div id="dmWorkspace" hidden>
+    <div class="toolbar"><button class="btn" id="dmSave">Save preparation</button><button class="btn" id="dmLoad">Load preparation</button><input type="file" id="dmFile" accept=".json,application/json" hidden></div>
+    <p class="dm-note">Private preparation for the DM. Only the question and selected spread are included in Vesper’s reading link.</p>
+    <div class="dm-panel"><label class="dm-field"><span>Vesper’s question to His Eminence</span><textarea id="dmQuestion" maxlength="2000"></textarea></label>
       <label class="dm-field"><span>The DM’s true answer — private</span><textarea id="dmAnswer" maxlength="8000"></textarea></label>
       <label class="dm-field"><span>Generation mode</span><select id="dmMode"><option value="preparation">Preparation — three ranked spreads with explanations</option><option value="fast">Fast — one spread, no explanations</option></select></label>
       <label class="dm-check"><input type="checkbox" id="dmBestEffort"> Allow the closest best-effort spread if the answer cannot be represented fully</label>
       <div class="toolbar"><button class="btn gold" id="dmGenerate">Suggest spreads</button><span class="dm-note" id="dmStale"></span></div>
+      <p id="dmGenerateStatus" class="dm-feedback dm-note" role="status" aria-live="polite" aria-atomic="true"></p>
     </div>
-    <p id="dmMessage" role="status" aria-live="polite"></p><div id="dmResults"></div>`;
+    <div id="dmResults"></div></div>`;
   document.querySelector('main').append(section);
   const banner = document.createElement('div');
   banner.id = 'sharedReading'; banner.className = 'shared-banner'; banner.hidden = true;
   banner.innerHTML = `<p>Shared reading preview. Your saved reading is preserved until you choose Save.</p><div class="toolbar"><button class="btn gold" id="sharedSave">Save this reading</button><button class="btn" id="sharedReturn">Return to my reading</button></div>`;
   document.querySelector('.topbar').after(banner);
-  let draft = P.empty(), access = null, busy = false;
+  let draft = P.empty(), access = null, busy = false, operation = null, expiryTimer;
+  const feedback = { generate: null, explain: null };
   try { const raw = localStorage.getItem(DRAFT); if (raw) draft = P.preparation(JSON.parse(raw)); } catch { showToast('Saved DM preparation could not be loaded. Import a valid file to recover it.'); }
   try { const raw = JSON.parse(localStorage.getItem(ACCESS) || 'null'); if (raw?.expires > Date.now() && typeof raw.token === 'string' && raw.token.length < 2000) access = raw; else localStorage.removeItem(ACCESS); } catch {}
   const message = (value, error = false) => { $('dmMessage').textContent = value; $('dmMessage').className = error ? 'dm-warning dm-error' : 'dm-warning'; };
+  function paintFeedback() {
+    for (const kind of ['generate', 'explain']) {
+      const node = $(kind === 'generate' ? 'dmGenerateStatus' : 'dmExplainStatus');
+      if (!node) continue;
+      const value = feedback[kind];
+      node.textContent = value?.text || '';
+      node.className = `dm-feedback ${value?.error ? 'dm-warning dm-error' : 'dm-note'}`;
+    }
+  }
+  function report(kind, text, error = false) { feedback[kind] = { text, error }; paintFeedback(); if (!access) message('Access expired. Enter the code again.', true); }
+  function clearFeedback() { feedback.generate = feedback.explain = null; paintFeedback(); }
   const active = () => draft.candidates[draft.selected];
   const currentInputs = () => P.inputs(draft);
   const stale = () => draft.generatedFor && !P.same(currentInputs(), draft.generatedFor);
   function saveDraft() { try { localStorage.setItem(DRAFT, JSON.stringify(draft)); } catch { message('This browser could not save the draft. Use Save preparation to keep a private file.', true); } }
   function fillFields() { $('dmQuestion').value = draft.question; $('dmAnswer').value = draft.answer; $('dmMode').value = draft.mode; $('dmBestEffort').checked = draft.allowBestEffort; }
   function updateAccess() {
+    clearTimeout(expiryTimer);
     if (access?.expires <= Date.now()) { access = null; try { localStorage.removeItem(ACCESS); } catch {} }
-    $('dmSetup').textContent = !API_URL ? 'Generation is not connected yet. Saving, loading, editing and reading links work offline; the owner must connect the generation service.' : access ? 'Generation unlocked on this device.' : 'Enter the shared code supplied by the owner.';
+    if (access) expiryTimer = setTimeout(lock, access.expires - Date.now());
+    $('dmSetup').textContent = !API_URL ? 'The owner must connect the preparation service.' : access ? 'Preparation unlocked on this device.' : 'Enter the shared code supplied by the owner.';
+    $('dmWorkspace').hidden = !access;
     $('dmUnlockForm').hidden = !!access || !API_URL; $('dmLock').hidden = !access;
-    $('dmRefreshUsage').hidden = !access; $('dmGenerate').disabled = busy || !access || !API_URL;
-    $('dmGenerate').textContent = draft.mode === 'fast' ? 'Suggest one spread' : 'Suggest three spreads';
+    $('dmRefreshUsage').hidden = !access; $('dmUsage').hidden = !access; $('dmGenerate').disabled = busy || !access || !API_URL;
+    $('dmGenerate').textContent = busy && operation === 'generate' ? 'Selecting spread…' : draft.mode === 'fast' ? 'Suggest one spread' : 'Suggest three spreads';
+    $('dmGenerate').setAttribute('aria-busy', String(busy && operation === 'generate'));
   }
   function render() {
     updateAccess();
     $('dmStale').textContent = stale() ? 'Inputs changed. Regenerate to match them.' : '';
     const c = active();
-    if (!c) { $('dmResults').replaceChildren(); return; }
+    if (!c || !access) { $('dmResults').replaceChildren(); paintFeedback(); return; }
     const changed = !P.same(c.slots, c.originalSlots);
     const explained = c.explanation && P.same(c.slots, c.explanationForSlots);
     $('dmResults').innerHTML = `<div class="dm-ranks">${draft.candidates.map((item, i) => `<button class="btn dm-rank" data-candidate="${i}" aria-pressed="${i === draft.selected}" ${busy ? 'disabled' : ''}>${i + 1}. ${item.slots.map((s, j) => `${POSITIONS[j].name}: ${escapeHtml(CARDS[s.card].name)} ${s.o === 'r' ? '↓' : '↑'}`).join(' · ')}${!P.same(item.slots, item.originalSlots) ? ' — manually edited' : ''}</button>`).join('')}</div>
@@ -292,15 +318,17 @@ setMode(state.mode);
         <select data-edit-card="${i}" aria-label="${POSITIONS[i].name} card" ${busy ? 'disabled' : ''}>${CARDS.map(card => `<option value="${card.num}" ${card.num === s.card ? 'selected' : ''}>${ROMAN[card.num]} — ${escapeHtml(card.name)}</option>`).join('')}</select>
         <select data-edit-o="${i}" aria-label="${POSITIONS[i].name} orientation" ${busy ? 'disabled' : ''}><option value="u" ${s.o === 'u' ? 'selected' : ''}>Upright</option><option value="r" ${s.o === 'r' ? 'selected' : ''}>Reversed</option></select>
         <p>${escapeHtml(CARDS[s.card][POSITIONS[i].key][s.o])}</p>${!P.same(s, c.originalSlots[i]) ? `<div class="dm-note">Manually edited. Original: ${escapeHtml(CARDS[c.originalSlots[i].card].name)} (${c.originalSlots[i].o === 'r' ? 'reversed' : 'upright'}).</div>` : ''}</div>`).join('')}</div>
-      <div class="toolbar" style="margin-top:16px"><button class="btn gold" id="dmShare" ${busy || stale() ? 'disabled' : ''}>Copy reading link</button><button class="btn" id="dmExplain" ${busy || stale() || !access || !API_URL ? 'disabled' : ''}>Explain this spread</button></div>
+      <div class="toolbar" style="margin-top:16px"><button class="btn gold" id="dmShare" ${busy || stale() ? 'disabled' : ''}>Copy reading link</button><button class="btn" id="dmExplain" aria-busy="${busy && operation === 'explain'}" ${busy || stale() || !access || !API_URL ? 'disabled' : ''}>${busy && operation === 'explain' ? 'Explaining spread…' : 'Explain this spread'}</button></div>
+      <p id="dmExplainStatus" class="dm-feedback dm-note" role="status" aria-live="polite" aria-atomic="true"></p>
       <p class="dm-note">The reading link contains Vesper’s question and this spread only. Explanations and the true answer stay private.</p>
       <input id="dmLink" aria-label="Vesper’s reading link" readonly hidden>
       ${c.explanation ? `<div class="dm-explanation">${!explained ? '<p class="dm-warning">Explanation describes an earlier version of this spread.</p>' : ''}<dl>${Object.entries(c.explanation).map(([k, v]) => `<dt>${({ conveyed: 'What it conveys', omissions: 'Details lost', misleading: 'Possible misinterpretation', metaphor: 'Metaphorical extension' })[k]}</dt><dd>${escapeHtml(v || 'None identified.')}</dd>`).join('')}</dl></div>` : ''}</div>`;
-    $('dmResults').querySelectorAll('[data-candidate]').forEach(b => b.onclick = () => { draft.selected = Number(b.dataset.candidate); saveDraft(); render(); });
+    paintFeedback();
+    $('dmResults').querySelectorAll('[data-candidate]').forEach(b => b.onclick = () => { draft.selected = Number(b.dataset.candidate); clearFeedback(); saveDraft(); render(); });
     $('dmResults').querySelectorAll('[data-edit-card], [data-edit-o]').forEach(el => el.onchange = () => {
       const i = Number(el.dataset.editCard ?? el.dataset.editO), old = active().slots[i];
       active().slots = P.edit(active(), i, el.dataset.editCard !== undefined ? Number(el.value) : old.card, el.dataset.editO !== undefined ? el.value : old.o);
-      saveDraft(); render();
+      clearFeedback(); saveDraft(); render();
     });
     $('dmShare').onclick = async () => {
       const base = location.protocol === 'file:' ? PUBLIC_SITE : location.href.split('#')[0].split('?')[0];
@@ -310,7 +338,7 @@ setMode(state.mode);
     };
     $('dmExplain').onclick = () => generate(true);
   }
-  function lock() { access = null; try { localStorage.removeItem(ACCESS); } catch {} $('dmUsage').textContent = ''; render(); }
+  function lock() { access = null; try { localStorage.removeItem(ACCESS); } catch {} $('dmUsage').textContent = ''; message(''); clearFeedback(); render(); }
   async function api(path, body, authenticated = true) {
     if (!API_URL) throw new Error('Generation service is not connected yet.');
     if (authenticated && (!access || access.expires <= Date.now())) { lock(); throw new Error('Access expired. Enter the code again.'); }
@@ -333,38 +361,45 @@ setMode(state.mode);
   }
   async function generate(explain = false) {
     if (busy) return;
+    const kind = explain ? 'explain' : 'generate';
     const input = currentInputs();
-    if (!input.question.trim() || !input.answer.trim()) { message('Enter both Vesper’s question and the DM’s true answer.', true); return; }
+    if (!input.question.trim() || !input.answer.trim()) { report(kind, 'Enter both Vesper’s question and the DM’s true answer.', true); return; }
     const c = active();
     if (explain && (!c || stale())) return;
-    setBusy(true); message(explain ? 'Explaining this spread…' : 'Selecting your spread…');
-    const timer = setTimeout(() => message(explain ? 'Still preparing the explanation…' : 'Still selecting your spread…'), 10000);
+    clearFeedback(); message(''); operation = kind;
     const start = performance.now();
+    const progress = () => {
+      const seconds = Math.floor((performance.now() - start) / 1000);
+      report(kind, `${explain ? 'Preparing the explanation' : 'Selecting your spread'} · ${seconds}s elapsed.${seconds >= 10 ? ' Still waiting for the generation service. You can leave this tab open; no extra request has been started.' : ' Please wait…'}`);
+    };
+    setBusy(true); progress();
+    const timer = setInterval(progress, 1000);
     try {
       const data = await api(explain ? '/explain' : '/generate', { ...input, requestId: crypto.randomUUID(), ...(explain ? { slots: c.slots } : {}) });
-      if (explain) { c.explanation = P.explanation(data.explanation); c.explanationForSlots = clone(c.slots); message(data.warning || 'Explanation ready.'); }
+      if (explain) { c.explanation = P.explanation(data.explanation); c.explanationForSlots = clone(c.slots); report(kind, `Explanation ready.${data.warning ? ` ${data.warning}` : ''}`); }
       else {
         const generated = P.result(data, input.mode);
         draft = { version: 1, ...input, generatedFor: input, status: generated.status, warning: generated.warning, selected: 0,
           candidates: generated.candidates.map(item => ({ ...item, originalSlots: clone(item.slots), originalExplanation: item.explanation, explanationForSlots: item.explanation ? clone(item.slots) : null })) };
-        message(generated.warning || `Spread${input.mode === 'fast' ? '' : 's'} ready in ${((performance.now() - start) / 1000).toFixed(1)} seconds.`);
+        feedback.explain = null;
+        report(kind, `${generated.candidates.length ? `Spread${input.mode === 'fast' ? '' : 's'} ready` : 'Request complete'} in ${((performance.now() - start) / 1000).toFixed(1)} seconds.${generated.warning ? ` ${generated.warning}` : ''}`);
       }
-      clearTimeout(timer);
-      saveDraft(); if (data.accountingWarning) message(`${$('dmMessage').textContent} ${data.accountingWarning}`, true);
+      clearInterval(timer);
+      saveDraft(); if (data.accountingWarning) report(kind, `${feedback[kind].text} ${data.accountingWarning}`, true);
       void usage();
-    } catch (e) { message(e.message, true); }
-    finally { clearTimeout(timer); setBusy(false); }
+    } catch (e) { report(kind, `Failed: ${e.message}`, true); }
+    finally { clearInterval(timer); setBusy(false); operation = null; }
   }
   $('dmUnlockForm').onsubmit = async e => {
     e.preventDefault(); $('dmUnlock').disabled = true;
     try { const data = await api('/auth', { code: $('dmCode').value }, false); access = { token: data.token, expires: data.expires }; $('dmCode').value = '';
       try { if ($('dmRemember').checked) localStorage.setItem(ACCESS, JSON.stringify(access)); else localStorage.removeItem(ACCESS); } catch {}
-      render(); message('Generation unlocked.'); await usage();
+      render(); message('Preparation unlocked.'); await usage();
     } catch (error) { message(error.message, true); } finally { $('dmUnlock').disabled = false; }
   };
   $('dmLock').onclick = lock; $('dmRefreshUsage').onclick = usage; $('dmGenerate').onclick = () => generate();
   for (const id of ['dmQuestion', 'dmAnswer', 'dmMode', 'dmBestEffort']) $(id).addEventListener('input', () => {
-    draft.question = $('dmQuestion').value; draft.answer = $('dmAnswer').value; draft.mode = $('dmMode').value; draft.allowBestEffort = $('dmBestEffort').checked; saveDraft(); render();
+    draft.question = $('dmQuestion').value; draft.answer = $('dmAnswer').value; draft.mode = $('dmMode').value; draft.allowBestEffort = $('dmBestEffort').checked; clearFeedback(); saveDraft(); render();
   });
   $('dmSave').onclick = () => {
     const content = JSON.stringify(P.preparation(draft), null, 2);
@@ -375,7 +410,7 @@ setMode(state.mode);
   $('dmLoad').onclick = () => $('dmFile').click();
   $('dmFile').onchange = async () => {
     const file = $('dmFile').files[0]; if (!file) return;
-    try { if (file.size > 1000000) throw new Error('Preparation file is too large.'); const loaded = P.preparation(JSON.parse(await file.text())); draft = loaded; fillFields(); saveDraft(); render(); message(draft.warning || 'Private preparation loaded without generation.'); }
+    try { if (file.size > 1000000) throw new Error('Preparation file is too large.'); const loaded = P.preparation(JSON.parse(await file.text())); draft = loaded; clearFeedback(); fillFields(); saveDraft(); render(); message(draft.warning || 'Private preparation loaded without generation.'); }
     catch (e) { message(`Could not load preparation: ${e.message}`, true); }
     finally { $('dmFile').value = ''; }
   };

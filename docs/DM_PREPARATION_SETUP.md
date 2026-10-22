@@ -14,8 +14,11 @@ separate explanations of exact chosen spreads, and D1 usage accounting.
 
 The Worker is deployed and configured, and the published frontend points to its
 public URL. Owner sign-in and the first real authenticated generation test are
-the next steps. Loading/importing a file, editing, sharing, and ordinary tarot use
-do not need the backend. No campaign text or API credential belongs in Git or D1.
+the next steps. Preparation controls and results stay hidden until unlocked;
+remembered access also unlocks them until it expires. After unlocking, file
+loading, editing and sharing need no generation request. Ordinary tarot use
+remains available without access. No campaign text or API credential belongs in
+Git or D1.
 
 ## Development
 

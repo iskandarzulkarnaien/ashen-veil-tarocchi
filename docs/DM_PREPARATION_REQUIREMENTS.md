@@ -55,6 +55,12 @@ a spread must be distinct. Orientations remain upright or reversed.
 ## DM interface, edits, and persistence
 
 - Add a DM Preparation tab in the existing application, preserving its style.
+- Keep preparation controls, saved inputs, and results hidden until access is
+  unlocked, including on remembered-access expiry or Lock. Use the established
+  title His Eminence in Vesper's question label.
+- Show progress beside generation and explanation buttons, with a busy indicator,
+  elapsed time, continuing feedback beyond ten seconds, and clear success or
+  failure feedback. Do not imply measurable provider progress or silently retry.
 - Allow manual edits and mark edited items; retain the original suggestion for
   comparison. Do not automatically pay for reevaluation after an edit.
 - Auto-save the current preparation locally, separately from `vesperTarocchi_v1`.
