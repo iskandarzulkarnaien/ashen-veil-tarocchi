@@ -12,11 +12,10 @@ player links. The Worker implements shared-code authentication, seven-day signed
 access tokens, revocation on code rotation, origin checks, structured generation,
 separate explanations of exact chosen spreads, and D1 usage accounting.
 
-The Worker is deployed and configured, and the local frontend now points to its
-public URL. Frontend publication and the first real authenticated generation
-test are the next steps. Loading/importing a file, editing, sharing, and ordinary
-tarot use do not need the backend. No campaign text or API credential belongs in
-Git or D1.
+The Worker is deployed and configured, and the published frontend points to its
+public URL. Owner sign-in and the first real authenticated generation test are
+the next steps. Loading/importing a file, editing, sharing, and ordinary tarot use
+do not need the backend. No campaign text or API credential belongs in Git or D1.
 
 ## Development
 
@@ -102,9 +101,11 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
    shared access code. Changing it invalidates every previously issued token.
 6. For a new installation or code update, run `npm run worker:deploy`. Record its actual HTTPS URL. Verify origin
    rejection, unlock, authenticated usage, and generation before connecting it.
-7. Set that verified URL in `src/preparation-ui.js` (`API_URL`), run `npm run sync`,
+7. For a new installation, set that verified URL in `src/preparation-ui.js` (`API_URL`), run `npm run sync`,
    then run the full checks. Publish through the existing Pages workflow only
    after checking that the artifact still contains only `index.html`.
+   This connection and frontend publication were completed for the owner on
+   2026-10-22; repeating publication is unnecessary for secret-only updates.
 8. Open the published site and verify real unlock/generation/explanation, a
    player-safe reading link in a separate browser context, and private JSON
    restoration. Record the deployed commit, URLs, results, and timing evidence.

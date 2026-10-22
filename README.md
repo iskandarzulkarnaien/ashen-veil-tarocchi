@@ -10,7 +10,7 @@ Open `index.html` directly in a browser for offline use. **Arcana Reference** co
 
 State is stored locally using `vesperTarocchi_v1`. File-origin state does **not** automatically transfer to localhost or GitHub Pages; browser storage belongs to each origin. Clearing browser storage removes that origin's saved reading.
 
-**DM Preparation** adds private inputs, editable suggestions, JSON save/load, and player-safe links containing only Vesper's question and selected cards. Shared links open temporarily until explicitly saved. DM drafts use a separate local storage key. Fast mode requests one spread without explanations; Preparation requests three ranked suggestions. Generation is not connected until the owner finishes [backend setup](docs/DM_PREPARATION_SETUP.md). See [the approved requirements](docs/DM_PREPARATION_REQUIREMENTS.md).
+**DM Preparation** adds private inputs, editable suggestions, JSON save/load, and player-safe links containing only Vesper's question and selected cards. Shared links open temporarily until explicitly saved. DM drafts use a separate local storage key. Fast mode requests one spread without explanations; Preparation requests three ranked suggestions. The published frontend is connected to the configured backend; generation requires the owner's shared codeword. Real AI output and latency still await the first authenticated test. See [backend setup](docs/DM_PREPARATION_SETUP.md) and [the approved requirements](docs/DM_PREPARATION_REQUIREMENTS.md).
 
 ## Local preview
 
@@ -65,7 +65,7 @@ Public repository: [iskandarzulkarnaien/ashen-veil-tarocchi](https://github.com/
 
 **Live application:** [Vesper's Tarocchi](https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/).
 
-The original application was published and verified on 2026-10-18; [the original verification report](docs/VERIFICATION.md) records that release and its font-rendering caveat. It is historical evidence, not verification of the new DM Preparation implementation. Backend authentication, live AI evaluation, and publication of this feature remain pending as described in [the setup document](docs/DM_PREPARATION_SETUP.md).
+The original application was published and verified on 2026-10-18; [the original verification report](docs/VERIFICATION.md) records that release and its font-rendering caveat. The DM frontend was published on 2026-10-22: CI passed, the artifact contains only `index.html`, and its hash matches local and live HTML. Six live browser scenarios passed. Authenticated generation, semantic fidelity and real API latency remain pending; see [the DM verification report](docs/DM_PREPARATION_VERIFICATION.md).
 
 The deployment uses `.github/workflows/pages.yml` on pushes to `main` and manual workflow runs. Validation must pass before deployment. Only `index.html` is staged in `_site/` and uploaded; instructions, tests, screenshots, and Git metadata remain outside the site artifact. **Settings → Pages → Source: GitHub Actions** is configured. The `github-pages` environment permits deployments only from `main`; choose that branch for manual runs. A failed validation leaves the previous successful site in place. To restore an older version, revert the relevant source commit on `main`, run the checks, and push.
 

@@ -1,6 +1,7 @@
-# DM Preparation — local implementation verification
+# DM Preparation — implementation and deployment verification
 
-Date: 2026-10-21. This report covers local implementation, not a public release.
+Initial local verification: 2026-10-21. Later dated checkpoints record external
+setup and preliminary frontend publication; real AI acceptance remains pending.
 
 ## Recorded requirements and source preservation
 
@@ -131,3 +132,28 @@ persists; no font substitutions or baseline screenshot edits were made.
 - Actual API key validity/permissions, model availability, generation fidelity,
   cost accounting and latency remain pending the owner's first real sign-in and
   generation. This checkpoint does not claim full application acceptance.
+
+## Frontend publication checkpoint — 2026-10-22
+
+- Repository: https://github.com/iskandarzulkarnaien/ashen-veil-tarocchi
+- Site: https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/
+- Published application commit: `a0533c5e7ea743c5fd77a5a2f6ca9c510217caa6`.
+- Successful workflow:
+  https://github.com/iskandarzulkarnaien/ashen-veil-tarocchi/actions/runs/39778128516
+- CI validation succeeded: 30 built-in/core/backend checks, 12 offline/HTTP
+  browser scenarios and the Worker dry-run build. Validation took 7m19s, including
+  6m13s installing browser tools; deployment succeeded in 29s.
+- Downloaded `github-pages` artifact was inspected. Its only file is
+  `./index.html`; no tests, backend files, documentation or credentials were
+  included in the Pages payload.
+- Local source, artifact HTML and HTTP 200 live HTML all have SHA-256:
+  `eabf922cfc8df412ddc30ad3f6875db776d2de9ed714c00894b7ab3575c15b34`.
+- Three existing live browser regression scenarios passed at 1440, 938 and
+  680px, including persistence, shortcuts, layout and zero unexpected errors or
+  subresources. Three additional live DM checks verified the password-type
+  codeword form, locked generation before authentication, no horizontal overflow
+  and no automatic Worker requests. Captures: `test-results/live-dm-*.png`.
+- No shared codeword was read or submitted by the agent, and no paid API call
+  occurred in these checks. Next step: owner enters the codeword on the published
+  DM tab. API permissions/model access, first actual generation, fidelity,
+  estimated spend and full-result latency still require that authenticated test.
