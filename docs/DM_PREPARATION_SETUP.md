@@ -53,17 +53,23 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
 1. Create/sign in to Cloudflare and enable an OpenAI API project with billing.
    A dedicated project/key makes app costs easier to attribute. Configure the
    desired provider-side spend limit in the OpenAI dashboard.
-2. Run `npm run worker:login`, completing the browser authorization. Then inspect
-   `npx wrangler whoami`. If multiple Cloudflare accounts are available, explicitly
+2. Run `npm run worker:login`, completing the browser authorization. This requests
+   account/user read access, Worker/script write access and D1 write access, with
+   credentials encrypted using the OS credential manager. Then inspect
+   `npx wrangler whoami`. Wrangler may warn about other missing scopes: those are
+   deliberately omitted; do not expand access unless a necessary command fails.
+   If multiple Cloudflare accounts are available, explicitly
    choose the owner's intended account before creating resources.
-3. Create the usage database:
+3. The owner's usage database was created and migrated on 2026-10-22. The
+   checked-in configuration references that existing database; do not create it
+   again. For a separate installation in another account, create a usage database:
 
    ```sh
    npx wrangler d1 create ashen-veil-tarocchi-usage --config worker/wrangler.jsonc
    ```
 
-   Replace `REPLACE_WITH_OWNER_DATABASE_ID` in `worker/wrangler.jsonc` with the
-   returned ID. The database ID is public configuration, not a credential.
+   In that separate installation, update the account/database IDs in
+   `worker/wrangler.jsonc`. Those IDs are public configuration, not credentials.
 4. Apply the schema:
 
    ```sh

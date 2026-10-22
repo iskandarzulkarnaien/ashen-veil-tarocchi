@@ -60,11 +60,12 @@ persists; no font substitutions or baseline screenshot edits were made.
 
 ## Pending external setup and live evidence
 
-- `wrangler whoami` reports no Cloudflare authentication in this session.
+- Cloudflare authentication and database setup were initially pending; see the
+  verified 2026-10-22 checkpoint below.
 - No OpenAI API credentials were found in the session environment. The owner
   indicated that both Cloudflare and OpenAI API account setup may be needed.
-- The D1 resource ID is deliberately a placeholder and frontend `API_URL` is
-  empty. The owner must authenticate/configure secrets before live generation.
+- The D1 resource ID is configured following the checkpoint below; frontend
+  `API_URL` remains empty. OpenAI billing and Worker secrets are still required.
 - No real model call has been made. Actual model access, semantic faithfulness,
   ten-second performance target, and production Worker CPU usage are unverified.
 - No Worker or new Pages release has been published. The existing public site is
@@ -73,3 +74,19 @@ persists; no font substitutions or baseline screenshot edits were made.
 - Real generation, accounting, credential rotation and cross-browser player
   links must be checked after setup and again on the public release. Continue
   with `docs/DM_PREPARATION_SETUP.md`; do not treat mocked tests as that evidence.
+
+## Cloudflare setup checkpoint — 2026-10-22
+
+- Owner completed browser OAuth authorization. `wrangler whoami` confirmed the
+  sole available Cloudflare account, ID `3d2cf90a75b27598dee32eb60547069d`.
+- Login credentials are encrypted on disk, with the encryption key held in
+  Windows Credential Manager. Authorized scopes are account/user read,
+  Workers/script write, D1 write, and Wrangler's automatic offline refresh scope.
+  Unrelated service scopes were deliberately omitted.
+- D1 database `ashen-veil-tarocchi-usage` was created in APAC, ID
+  `ba28d4f4-c21f-4749-9b5c-b18906e53366`; account and database IDs are now pinned
+  in `worker/wrangler.jsonc`.
+- Remote migration `0001_usage.sql` succeeded. A read-only remote query verified
+  both `usage` and `auth_limits` exist and each contains zero rows.
+- No paid AI request, Worker deployment, or Pages publication occurred during
+  this checkpoint. Next dependency is owner OpenAI API platform/billing setup.

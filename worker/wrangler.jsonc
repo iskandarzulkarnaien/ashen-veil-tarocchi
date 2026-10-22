@@ -1,6 +1,7 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "ashen-veil-tarocchi-api",
+  "account_id": "3d2cf90a75b27598dee32eb60547069d",
   "main": "index.mjs",
   "compatibility_date": "2026-10-21",
   "workers_dev": true,
@@ -17,7 +18,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "ashen-veil-tarocchi-usage",
-    "database_id": "REPLACE_WITH_OWNER_DATABASE_ID",
+    "database_id": "ba28d4f4-c21f-4749-9b5c-b18906e53366",
     "migrations_dir": "migrations"
   }]
 }

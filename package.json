@@ -8,7 +8,7 @@
     "test:browser": "node tests/browser.mjs && node tests/preparation-browser.mjs",
     "sync": "node scripts/sync-runtime.mjs",
     "worker:check": "wrangler deploy --dry-run --config worker/wrangler.jsonc",
-    "worker:login": "wrangler login",
+    "worker:login": "wrangler login --use-keyring --scopes account:read user:read workers:write workers_scripts:write d1:write",
     "worker:deploy": "wrangler deploy --config worker/wrangler.jsonc"
   },
   "engines": {
