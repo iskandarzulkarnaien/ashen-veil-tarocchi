@@ -68,7 +68,8 @@ persists; no font substitutions or baseline screenshot edits were made.
   `API_URL` remains empty. OpenAI billing and Worker secrets are still required.
 - No real model call has been made. Actual model access, semantic faithfulness,
   ten-second performance target, and production Worker CPU usage are unverified.
-- No Worker or new Pages release has been published. The existing public site is
+- The Worker is deployed in a locked, unconfigured state; see the checkpoint
+  below. No new Pages release has been published. The existing public site is
   the prior release; the new reading-link format requires publication of this
   implementation before links work there.
 - Real generation, accounting, credential rotation and cross-browser player
@@ -90,3 +91,21 @@ persists; no font substitutions or baseline screenshot edits were made.
   both `usage` and `auth_limits` exist and each contains zero rows.
 - No paid AI request, Worker deployment, or Pages publication occurred during
   this checkpoint. Next dependency is owner OpenAI API platform/billing setup.
+
+## Locked Worker deployment checkpoint — 2026-10-22
+
+- Owner reports the dedicated OpenAI API project is created, funded, and has its
+  monthly spending control saved. No API credential has been provided to chat.
+- Verified that `ashen-veil-tarocchi-api` did not already exist before deployment,
+  then deployed it at:
+  `https://ashen-veil-tarocchi-api.ashen-veil-tarocchi.workers.dev`.
+- Initial code deployment version: `936bc11b-1b06-4d5d-b1da-cd42e9d22ba4`.
+- Real HTTP checks passed: the allowed Pages origin receives HTTP 503 with the
+  expected unconfigured-service response; an unrelated origin receives HTTP 403.
+- Secret-name inspection initially returned an empty list. A new, random
+  48-byte session-signing secret was generated and piped directly into Wrangler
+  as `SESSION_SECRET`, without printing or saving its value. API key and shared
+  access code remain unset, so generation is still disabled.
+- Next step is owner creation of a project-scoped API key and direct entry into
+  the Worker's Secret settings. Live AI testing and Pages publication remain
+  pending; no paid generation call was made during this checkpoint.

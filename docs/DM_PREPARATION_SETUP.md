@@ -76,7 +76,16 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
    npx wrangler d1 migrations apply DB --remote --config worker/wrangler.jsonc
    ```
 
-5. Enter each secret into Wrangler's interactive prompt:
+5. The owner's Worker is now deployed at
+   `https://ashen-veil-tarocchi-api.ashen-veil-tarocchi.workers.dev` in a locked
+   state. `SESSION_SECRET` was generated and securely uploaded on 2026-10-22;
+   do not recreate it as part of ordinary setup. `OPENAI_API_KEY` and
+   `SHARED_ACCESS_CODE` still need direct entry by the owner.
+
+   For dashboard entry, select the Worker, then **Settings → Variables and
+   Secrets → Add**, select type **Secret**, enter the exact binding name and
+   value, and deploy the change. Do not select plaintext Text for credentials.
+   Alternatively, enter each secret into Wrangler's interactive prompt:
 
    ```sh
    npx wrangler secret put OPENAI_API_KEY --config worker/wrangler.jsonc
@@ -87,7 +96,7 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
    Choose a strong access passphrase of 16–256 characters and a separate randomly
    generated session secret of at least 32 characters. The DM only receives the
    shared access code. Changing it invalidates every previously issued token.
-6. Run `npm run worker:deploy`. Record its actual HTTPS URL. Verify origin
+6. For a new installation or code update, run `npm run worker:deploy`. Record its actual HTTPS URL. Verify origin
    rejection, unlock, authenticated usage, and generation before connecting it.
 7. Set that verified URL in `src/preparation-ui.js` (`API_URL`), run `npm run sync`,
    then run the full checks. Publish through the existing Pages workflow only
