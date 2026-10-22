@@ -3,8 +3,8 @@
   'use strict';
   const P = globalThis.TarocchiPreparation;
   const DRAFT = 'vesperTarocchi_dm_v1', ACCESS = 'vesperTarocchi_access_v1';
-  // Set this public URL only after the owner has deployed and verified the Worker.
-  const API_URL = '';
+  // Public Worker address; credentials remain in Cloudflare secrets.
+  const API_URL = 'https://ashen-veil-tarocchi-api.ashen-veil-tarocchi.workers.dev';
   const PUBLIC_SITE = 'https://iskandarzulkarnaien.github.io/ashen-veil-tarocchi/';
   const clone = value => JSON.parse(JSON.stringify(value));
   const style = document.createElement('style');

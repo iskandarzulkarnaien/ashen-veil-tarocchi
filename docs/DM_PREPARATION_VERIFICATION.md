@@ -109,3 +109,25 @@ persists; no font substitutions or baseline screenshot edits were made.
 - Next step is owner creation of a project-scoped API key and direct entry into
   the Worker's Secret settings. Live AI testing and Pages publication remain
   pending; no paid generation call was made during this checkpoint.
+
+## Connection readiness checkpoint — 2026-10-22
+
+- Secret-name/type inspection confirmed `OPENAI_API_KEY`, `SESSION_SECRET`, and
+  `SHARED_ACCESS_CODE` as `secret_text`. Their values were not read or exposed.
+- The initial access-code minimum was an implementation choice, not an agreed
+  requirement. Following the owner's clarification, the Worker now accepts any
+  non-whitespace codeword up to 256 characters. Existing unlock attempt limits
+  remain in place. Empty/invalid binding diagnostics identify only the binding,
+  never its secret value or actual length.
+- A regression test confirms short-codeword authentication. All 15 backend tests
+  pass, including configuration validation and no-secret-disclosure checks.
+- Current Worker deployment version: `9b8e9da9-766f-4416-888c-c83d1b1ecdf4`.
+- A real allowed-origin GET `/usage` without credentials returns HTTP 401 rather
+  than configuration HTTP 503, confirming readiness for owner sign-in. No access
+  code or API key was submitted to that probe; no paid generation occurred.
+- The frontend points to the verified Worker URL. The 12 offline/HTTP browser
+  scenarios passed again; API calls in preparation browser tests remain mocked
+  and are explicitly redirected away from the real Worker.
+- Actual API key validity/permissions, model availability, generation fidelity,
+  cost accounting and latency remain pending the owner's first real sign-in and
+  generation. This checkpoint does not claim full application acceptance.

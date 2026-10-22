@@ -23,7 +23,11 @@ async function equalSecret(a, b) {
   return difference === 0;
 }
 function configured(env) {
-  if (!env.DB || !env.OPENAI_API_KEY || env.SHARED_ACCESS_CODE?.length < 16 || env.SHARED_ACCESS_CODE?.length > 256 || !env.SHARED_ACCESS_CODE || env.SESSION_SECRET?.length < 32 || !env.SESSION_SECRET) reject(503, 'The owner has not finished configuring generation.');
+  // Report only the invalid binding, never its value or actual length.
+  if (!env.DB) reject(503, 'The usage database binding is not configured.');
+  if (typeof env.OPENAI_API_KEY !== 'string' || !env.OPENAI_API_KEY.trim()) reject(503, 'The OPENAI_API_KEY secret is missing or empty.');
+  if (typeof env.SHARED_ACCESS_CODE !== 'string' || !env.SHARED_ACCESS_CODE.trim() || env.SHARED_ACCESS_CODE.length > 256) reject(503, 'The SHARED_ACCESS_CODE secret must be nonempty and at most 256 characters.');
+  if (typeof env.SESSION_SECRET !== 'string' || env.SESSION_SECRET.length < 32) reject(503, 'The SESSION_SECRET secret must contain at least 32 characters.');
 }
 async function signingSecret(env) { return encode64(await hmac(env.SESSION_SECRET, `access-code:${env.SHARED_ACCESS_CODE}`)); }
 export async function issueToken(env, now = Date.now()) {

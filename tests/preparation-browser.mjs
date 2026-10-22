@@ -13,7 +13,7 @@ const api = 'https://tarocchi-api.test';
 const server = createServer((req, res) => {
   if (req.url?.split('#')[0] !== '/ashen-veil-tarocchi/') { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(html.replace("const API_URL = '';", `const API_URL = '${api}';`));
+  res.end(html.replace(/const API_URL = '[^']*';/, () => `const API_URL = '${api}';`));
 }).listen(0, '127.0.0.1');
 await once(server, 'listening');
 const spread = [{ card: 7, o: 'u' }, { card: 18, o: 'r' }, { card: 16, o: 'u' }];

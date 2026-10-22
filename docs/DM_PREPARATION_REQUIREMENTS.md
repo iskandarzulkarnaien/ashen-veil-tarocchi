@@ -84,6 +84,8 @@ a spread must be distinct. Orientations remain upright or reversed.
 - The owner owns the Cloudflare/OpenAI accounts and pays API usage. The DM needs
   no account, installation, hosting, or API credentials.
 - Protect generation and usage information with a shared private access code.
+  The owner may choose a simple codeword; no password-manager or minimum-length
+  requirement applies. Reject empty values and retain attempt limiting.
   Remember access where possible, offer Lock, expire authorization, and make
   access-code rotation invalidate old authorization.
 - Keep OpenAI keys and access credentials in Worker secrets, never public source,

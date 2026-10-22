@@ -74,6 +74,27 @@ test('invalid inputs and missing ledger prevent paid calls', async () => {
   assert.equal((await s.send('/explain', { ...input(), slots: [spread[0], spread[0], spread[2]] }, token)).status, 400);
   s.env.DB = null; assert.equal((await s.send('/generate', input(), token)).status, 503); assert.equal(s.calls, 0); s.db.close();
 });
+test('configuration errors identify invalid bindings without leaking values or making paid calls', async () => {
+  for (const [binding, bad, expected] of [
+    ['DB', null, 'database binding'],
+    ['OPENAI_API_KEY', ' ', 'OPENAI_API_KEY'],
+    ['SHARED_ACCESS_CODE', ' ', 'SHARED_ACCESS_CODE'],
+    ['SHARED_ACCESS_CODE', 's'.repeat(257), 'SHARED_ACCESS_CODE'],
+    ['SESSION_SECRET', 'short-private', 'SESSION_SECRET'],
+  ]) {
+    const s = setup(); s.env[binding] = bad;
+    const response = await s.send('/usage'); const value = await response.json();
+    assert.equal(response.status, 503); assert.ok(value.error.includes(expected));
+    assert.ok(!value.error.includes('short-private')); assert.equal(s.calls, 0); s.db.close();
+  }
+});
+test('an owner-selected short codeword can authenticate', async () => {
+  const s = setup(); s.env.SHARED_ACCESS_CODE = 'raven';
+  const token = await s.unlock();
+  assert.equal(typeof token, 'string');
+  const response = await s.send('/usage', null, token);
+  assert.equal(response.status, 200); assert.equal(s.calls, 0); s.db.close();
+});
 test('invalid generated cards rejected, accounted for and not retried', async () => {
   const s = setup(async () => Response.json({ status: 'completed', usage, output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ ...generated, candidates: [{ slots: [spread[0], spread[0], spread[2]], warning: '' }] }) }] }] }));
   const token = await s.unlock(); assert.equal((await s.send('/generate', input(), token)).status, 502);

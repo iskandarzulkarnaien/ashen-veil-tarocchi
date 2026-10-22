@@ -12,10 +12,11 @@ player links. The Worker implements shared-code authentication, seven-day signed
 access tokens, revocation on code rotation, origin checks, structured generation,
 separate explanations of exact chosen spreads, and D1 usage accounting.
 
-**Generation is not connected in the public HTML yet.** `API_URL` remains empty
-until an owner Worker has been deployed and verified. Loading/importing a file,
-editing, sharing, and ordinary tarot use do not need the backend. No campaign text
-or API credential belongs in Git or D1.
+The Worker is deployed and configured, and the local frontend now points to its
+public URL. Frontend publication and the first real authenticated generation
+test are the next steps. Loading/importing a file, editing, sharing, and ordinary
+tarot use do not need the backend. No campaign text or API credential belongs in
+Git or D1.
 
 ## Development
 
@@ -78,9 +79,10 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
 
 5. The owner's Worker is now deployed at
    `https://ashen-veil-tarocchi-api.ashen-veil-tarocchi.workers.dev` in a locked
-   state. `SESSION_SECRET` was generated and securely uploaded on 2026-10-22;
-   do not recreate it as part of ordinary setup. `OPENAI_API_KEY` and
-   `SHARED_ACCESS_CODE` still need direct entry by the owner.
+   state until configured. All three required secrets were confirmed present on
+   2026-10-22. `SESSION_SECRET` was generated and securely uploaded; the owner
+   entered `OPENAI_API_KEY` and `SHARED_ACCESS_CODE` directly in the dashboard.
+   Do not recreate existing secrets as part of ordinary setup.
 
    For dashboard entry, select the Worker, then **Settings → Variables and
    Secrets → Add**, select type **Secret**, enter the exact binding name and
@@ -93,8 +95,10 @@ Do not paste API keys or shared codes into chat, source files, or shell history.
    npx wrangler secret put SESSION_SECRET --config worker/wrangler.jsonc
    ```
 
-   Choose a strong access passphrase of 16–256 characters and a separate randomly
-   generated session secret of at least 32 characters. The DM only receives the
+   Choose any nonempty access codeword (up to 256 characters), as requested by the
+   owner. No password manager or minimum length is required for this shared code.
+   Use a separate randomly generated session secret of at least 32 characters.
+   The DM only receives the
    shared access code. Changing it invalidates every previously issued token.
 6. For a new installation or code update, run `npm run worker:deploy`. Record its actual HTTPS URL. Verify origin
    rejection, unlock, authenticated usage, and generation before connecting it.
