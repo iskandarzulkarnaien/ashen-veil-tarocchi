@@ -157,3 +157,33 @@ persists; no font substitutions or baseline screenshot edits were made.
   occurred in these checks. Next step: owner enters the codeword on the published
   DM tab. API permissions/model access, first actual generation, fidelity,
   estimated spend and full-result latency still require that authenticated test.
+
+## DM presentation and feedback checkpoint — 2026-10-22
+
+- Published application commit: `9f03ead0341d2a1308ddab338eecbe16aae1898c`.
+- Successful workflow:
+  https://github.com/iskandarzulkarnaien/ashen-veil-tarocchi/actions/runs/39785179921
+- The locked DM tab shows only its heading and access form. Save/load controls,
+  inputs, usage, suggestions and explanations are concealed until unlocked;
+  Lock and automatic access expiry conceal them again. Remembered authorization
+  restores access without exposing the saved preparation to a fresh visitor.
+- The question label now uses the existing deity title, His Eminence.
+- Generation and explanation each show a spinner, disabled action button,
+  adjacent elapsed-time feedback, continued waiting feedback after ten seconds,
+  and a persistent completion or failure message. No automatic retry was added.
+- Local checks passed: 30 data/core/backend checks and 12 file/HTTP browser
+  scenarios at 1440, 938 and 680px. Added browser assertions cover wrong codes,
+  concealment, remembered authorization, expiry, delayed generation/explanation,
+  in-viewport explanation feedback, successful completion, failures preserving
+  drafts and restored action buttons. All original card bytes remain unchanged.
+- CI independently passed the same checks and the Worker dry-run bundle check.
+  The deployed artifact contains only `./index.html`. Source, artifact and HTTP
+  200 live HTML have identical SHA-256:
+  `878c4e941ce993c65e6359140c5f380359844eceea84bf97238be353025a1971`.
+- Live browser checks passed at all three widths: three existing application
+  scenarios plus three locked-DM checks. No horizontal overflow, JavaScript
+  errors or automatic API calls occurred. Screenshots were visually inspected.
+- These changes do not alter the Worker or its model configuration. Generation
+  and explanation feedback were tested with deterministic delayed/error mocks;
+  no paid API requests were made. Real AI fidelity, API permissions and latency
+  remain outside this cosmetic checkpoint's verified results.
